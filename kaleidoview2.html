@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Kaleidoscope Tunnel</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            text-shadow: 0 0 5px #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">Move mouse to change geometry • Scroll to change speed</div>
+    
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); // 2D Camera
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. The Kaleidoscope Shader
+        // This is where the math happens to fake the internal environment
+        const fragmentShader = `
+            uniform float iTime;
+            uniform vec2 iResolution;
+            uniform vec2 iMouse;
+            
+            #define PI 3.14159265359
+
+            // Function to generate a palette of colors
+            vec3 palette( float t ) {
+                vec3 a = vec3(0.5, 0.5, 0.5);
+                vec3 b = vec3(0.5, 0.5, 0.5);
+                vec3 c = vec3(1.0, 1.0, 1.0);
+                vec3 d = vec3(0.263, 0.416, 0.557);
+                return a + b*cos( 6.28318*(c*t+d) );
+            }
+
+            void main() {
+                // Normalize coordinates to center (from -1 to 1)
+                vec2 uv = (gl_FragCoord.xy * 2.0 - iResolution.xy) / iResolution.y;
+                vec2 uv0 = uv; // Store original uv
+                
+                vec3 finalColor = vec3(0.0);
+                
+                // KALEIDOSCOPE LOGIC
+                // Calculate angle and radius
+                float angle = atan(uv.y, uv.x);
+                float radius = length(uv);
+                
+                // Number of mirrors/segments (controlled by mouse X)
+                float segments = 6.0 + floor(iMouse.x * 10.0); 
+
+                // Fold the space
+                angle = mod(angle, 2.0 * PI / segments);
+                angle = abs(angle - (PI / segments));
+                
+                // Convert back to cartesian based on folded angle
+                uv = vec2(cos(angle), sin(angle)) * radius;
+
+                // TUNNEL EFFECT (Iterations)
+                for (float i = 0.0; i < 4.0; i++) {
+                    // This creates the internal patterns
+                    uv = fract(uv * 1.5) - 0.5;
+
+                    float d = length(uv) * exp(-length(uv0));
+
+                    vec3 col = palette(length(uv0) + i*.4 + iTime*.4);
+
+                    d = sin(d*8. + iTime)/8.;
+                    d = abs(d);
+
+                    d = pow(0.01 / d, 1.2);
+
+                    finalColor += col * d;
+                }
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        const vertexShader = `
+            void main() {
+                gl_Position = vec4( position, 1.0 );
+            }
+        `;
+
+        // 3. Create the Mesh with ShaderMaterial
+        const uniforms = {
+            iTime: { value: 0 },
+            iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            iMouse: { value: new THREE.Vector2(0.5, 0.5) } // Default centered
+        };
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            uniforms: uniforms
+        });
+
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        // 4. Interaction & Animation
+        let speed = 1.0;
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            uniforms.iResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        // Handle Mouse Move
+        window.addEventListener('mousemove', (e) => {
+            // Normalize mouse from 0 to 1
+            uniforms.iMouse.value.x = e.clientX / window.innerWidth;
+            uniforms.iMouse.value.y = e.clientY / window.innerHeight;
+        });
+        
+        // Handle Scroll (Speed)
+        window.addEventListener('wheel', (e) => {
+            speed += e.deltaY * -0.001;
+            speed = Math.max(0.1, Math.min(speed, 5.0)); // Clamp speed
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            uniforms.iTime.value += clock.getDelta() * speed;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

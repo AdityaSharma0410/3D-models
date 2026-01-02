@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bright Metallic Kaleidoscope</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #ffffff; cursor: grab; }
+        body.grabbing { cursor: grabbing; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #333;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            pointer-events: none;
+            user-select: none;
+            border: 1px solid #e0e0e0;
+        }
+        h3 { margin: 0 0 5px 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: #000; }
+        p { margin: 0; font-size: 0.9rem; color: #555; }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <h3>Metallic Mirrorverse</h3>
+        <p>Drag to spin the structure</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+        // 1. SCENE SETUP (Bright and Open)
+        const scene = new THREE.Scene();
+        // Pure white background for maximum brightness
+        scene.background = new THREE.Color(0xffffff); 
+        // White fog to blend distance seamlessly
+        scene.fog = new THREE.Fog(0xffffff, 40, 100);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // CHANGE: Moved camera significantly back to open up the confined space
+        camera.position.set(0, 0, 35); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        // CHANGE: Increased exposure for a brighter, gleaming look
+        renderer.toneMappingExposure = 1.5;
+        document.body.appendChild(renderer.domElement);
+
+        // 2. LIGHTING (High Intensity for Metallic Reflection)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+
+        // Strong main light
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(20, 30, 20);
+        scene.add(dirLight);
+        
+        // Bright white rim light to catch edges
+        const rimLight = new THREE.DirectionalLight(0xffffff, 2.0); 
+        rimLight.position.set(-20, 0, -10);
+        scene.add(rimLight);
+
+        // 3. MATERIALS (Bright Metallic)
+        // New palette: Silver, Gold, Polished Copper, Platinum
+        const metallicPalette = [
+            0xffffff, // Silver/Platinum
+            0xffd700, // Gold
+            0xb87333, // Copper
+            0xe6e6fa, // Lavender Steel
+            0x87ceeb  // Light Blue Chrome
+        ];
+
+        const metalMaterials = metallicPalette.map(color => {
+            return new THREE.MeshPhysicalMaterial({
+                color: color,
+                metalness: 1.0, // Fully metal
+                roughness: 0.05, // Very polished surface
+                clearcoat: 1.0, // Extra shiny layer on top
+                clearcoatRoughness: 0.0,
+                side: THREE.DoubleSide,
+                flatShading: false // Smooth shading for better metallic gradients
+            });
+        });
+
+        // 4. THE CONNECTED STRUCTURE (The Nucleus)
+        const structureGroup = new THREE.Group();
+        
+        // Main continuous loop (Silver)
+        const mainKnotGeo = new THREE.TorusKnotGeometry(4.5, 1.2, 200, 32, 2, 3);
+        const mainKnot = new THREE.Mesh(mainKnotGeo, metalMaterials[0]);
+        structureGroup.add(mainKnot);
+
+        // Intersecting Ring (Gold)
+        const ringGeo = new THREE.TorusGeometry(7, 0.6, 32, 100);
+        const ring = new THREE.Mesh(ringGeo, metalMaterials[1]); 
+        ring.rotation.x = Math.PI / 2;
+        structureGroup.add(ring);
+
+        // The Core (Copper)
+        const coreGeo = new THREE.IcosahedronGeometry(3, 1);
+        const core = new THREE.Mesh(coreGeo, metalMaterials[2]);
+        structureGroup.add(core);
+
+        // Orbiting connections (Steel/Blue)
+        const connectorGeo = new THREE.CylinderGeometry(0.2, 0.2, 12);
+        const connectorCount = 8;
+        for(let i=0; i<connectorCount; i++) {
+            // Alternating materials
+            const mat = i % 2 === 0 ? metalMaterials[3] : metalMaterials[4];
+            const connector = new THREE.Mesh(connectorGeo, mat);
+            connector.rotation.z = (Math.PI * i) / (connectorCount/2);
+            connector.rotation.y = Math.PI / 4; // Add overlap
+            structureGroup.add(connector);
+        }
+
+        scene.add(structureGroup);
+
+
+        // 5. KALEIDOSCOPE SHADER
+        const KaleidoscopeShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'sides': { value: 8.0 },
+                'angle': { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float sides;
+                uniform float angle;
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 p = vUv - 0.5;
+                    float r = length(p);
+                    float a = atan(p.y, p.x) + angle;
+                    float tau = 6.28318;
+                    
+                    // Smooth folding
+                    a = mod(a, tau/sides);
+                    a = abs(a - tau/sides/2.0);
+                    
+                    p = r * vec2(cos(a), sin(a));
+                    
+                    vec4 color = texture2D(tDiffuse, p + 0.5);
+                    
+                    // Brighten the center slightly
+                    color.rgb += (1.0 - r) * 0.1;
+                    
+                    gl_FragColor = color;
+                }
+            `
+        };
+
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const kaleidoPass = new ShaderPass(KaleidoscopeShader);
+        composer.addPass(kaleidoPass);
+
+
+        // 6. SMOOTH INTERACTION LOGIC (Inertia System)
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let targetKaleidoAngle = 0;
+        let velX = 0;
+        let velY = 0;
+
+        document.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            document.body.classList.add('grabbing');
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => { isDragging = false; document.body.classList.remove('grabbing'); });
+        document.addEventListener('mouseleave', () => { isDragging = false; document.body.classList.remove('grabbing'); });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - lastMouseX;
+            const deltaY = e.clientY - lastMouseY;
+
+            // Add momentum
+            velX += deltaX * 0.0005;
+            velY += deltaY * 0.0005;
+
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        // 7. ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Friction
+            velX *= 0.96;
+            velY *= 0.96;
+
+            // Apply velocity
+            targetKaleidoAngle += velX;
+
+            // Update Shader
+            kaleidoPass.uniforms['angle'].value = targetKaleidoAngle;
+
+            // Update 3D Object Rotation smoothly
+            structureGroup.rotation.x += velY; 
+            structureGroup.rotation.y += velX * 0.8;
+
+            // Gentle idle metallic glimmer rotation
+            structureGroup.rotation.z += 0.0005;
+
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

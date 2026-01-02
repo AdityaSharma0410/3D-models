@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Android Doll</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #1a1a1a; /* Darker background for particle visibility */
+            color: #f0f0f0;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 400px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Particles forming an Android doll. Drag to rotate.</div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
+        import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
+
+        // --- Basic Setup ---
+        let scene, camera, renderer, controls, clock;
+        let particles;
+        let noise;
+        const particleCount = 100000; // Increased for high detail
+        const particleInfo = [];
+
+        // --- Main Functions ---
+        init();
+        
+        // Function to initialize the scene, camera, and renderer
+        function init() {
+            clock = new THREE.Clock();
+            scene = new THREE.Scene();
+            noise = new ImprovedNoise();
+            
+            // --- Camera and Renderer ---
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 25; // Pulled back to see the whole figure
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // --- Build Android Doll Geometry ---
+            const bodyMaterial = new THREE.MeshNormalMaterial(); // Use a simple material for the source mesh
+            const bodyParts = [];
+
+            // 1. Head (Hemisphere)
+            const headGeo = new THREE.SphereGeometry(4.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const headMesh = new THREE.Mesh(headGeo, bodyMaterial);
+            headMesh.position.y = 3;
+            bodyParts.push({ mesh: headMesh, particlePercentage: 0.35 });
+
+            // 2. Body (Cylinder)
+            const bodyGeo = new THREE.CylinderGeometry(4.5, 4.5, 6, 32);
+            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMaterial);
+            bodyParts.push({ mesh: bodyMesh, particlePercentage: 0.35 });
+
+            // 3. Arms (Cylinders)
+            const armGeo = new THREE.CylinderGeometry(1, 1, 5, 16);
+            const leftArmMesh = new THREE.Mesh(armGeo, bodyMaterial);
+            leftArmMesh.position.set(-5.5, 0, 0);
+            const rightArmMesh = new THREE.Mesh(armGeo, bodyMaterial);
+            rightArmMesh.position.set(5.5, 0, 0);
+            bodyParts.push({ mesh: leftArmMesh, particlePercentage: 0.08 });
+            bodyParts.push({ mesh: rightArmMesh, particlePercentage: 0.08 });
+
+            // 4. Legs (Cylinders)
+            const legGeo = new THREE.CylinderGeometry(1, 1, 4, 16);
+            const leftLegMesh = new THREE.Mesh(legGeo, bodyMaterial);
+            leftLegMesh.position.set(-2.5, -5, 0);
+            const rightLegMesh = new THREE.Mesh(legGeo, bodyMaterial);
+            rightLegMesh.position.set(2.5, -5, 0);
+            bodyParts.push({ mesh: leftLegMesh, particlePercentage: 0.06 });
+            bodyParts.push({ mesh: rightLegMesh, particlePercentage: 0.06 });
+            
+            // 5. Antennae
+            const antennaGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+            const leftAntennaMesh = new THREE.Mesh(antennaGeo, bodyMaterial);
+            leftAntennaMesh.position.set(-2, 7.5, 0);
+            leftAntennaMesh.rotation.z = -Math.PI / 8;
+            const rightAntennaMesh = new THREE.Mesh(antennaGeo, bodyMaterial);
+            rightAntennaMesh.position.set(2, 7.5, 0);
+            rightAntennaMesh.rotation.z = Math.PI / 8;
+            bodyParts.push({ mesh: leftAntennaMesh, particlePercentage: 0.01 });
+            bodyParts.push({ mesh: rightAntennaMesh, particlePercentage: 0.01 });
+
+            // --- Create Particles ---
+            const particleGeometry = new THREE.SphereGeometry(0.05, 6, 6); // Smaller particles
+            const particleMaterial = new THREE.MeshStandardMaterial({
+                color: 0xC0C0C0,
+                roughness: 0.6,
+                metalness: 0.2
+            });
+            particles = new THREE.InstancedMesh(particleGeometry, particleMaterial, particleCount);
+            
+            const targetPosition = new THREE.Vector3();
+            let particleIndex = 0;
+
+            // Sample points from each body part based on its estimated surface area
+            bodyParts.forEach(part => {
+                const sampler = new MeshSurfaceSampler(part.mesh).build();
+                const numParticlesForPart = Math.floor(particleCount * part.particlePercentage);
+                for (let i = 0; i < numParticlesForPart; i++) {
+                    if (particleIndex >= particleCount) break;
+                    sampler.sample(targetPosition);
+                    
+                    particleInfo.push({
+                        target: targetPosition.clone(),
+                        journey: {
+                           currentIndex: particleIndex,
+                           nextIndex: Math.floor(Math.random() * particleCount),
+                           progress: 0.0,
+                           speed: 0.05 + Math.random() * 0.05
+                        },
+                        initial: new THREE.Vector3((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40)
+                    });
+                    particleIndex++;
+                }
+            });
+             // In case of rounding errors, fill the rest
+            while(particleIndex < particleCount) {
+                 particleInfo.push({
+                        target: new THREE.Vector3(), // Dummy
+                        journey: { currentIndex: 0, nextIndex: 0, progress: 0, speed: 0.05 },
+                        initial: new THREE.Vector3()
+                    });
+                particleIndex++;
+            }
+
+
+            scene.add(particles);
+
+            // --- Controls ---
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Start the animation loop AFTER controls are initialized
+            animate(); 
+
+            // --- Event Listeners ---
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            const deltaTime = clock.getDelta(); 
+
+            if (particles) {
+                const dummy = new THREE.Object3D();
+                const formationAlpha = Math.min(elapsedTime / 5.0, 1.0);
+
+                const distortionNoiseSpeed = 0.8;
+                const distortionNoiseScale = 0.3; 
+                const distortionNoiseStrength = 0.8; 
+                const maskNoiseSpeed = 0.2;
+                const maskNoiseScale = 0.1;
+                const energyNoiseSpeed = 3.0;
+                const energyNoiseScale = 2.0; 
+                const energyNoiseStrength = 0.15;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const info = particleInfo[i];
+                    
+                    info.journey.progress += info.journey.speed * deltaTime;
+
+                    if (info.journey.progress >= 1.0) {
+                        info.journey.progress = 0.0;
+                        info.journey.currentIndex = info.journey.nextIndex;
+                        info.journey.nextIndex = Math.floor(Math.random() * particleCount);
+                    }
+                    
+                    const startPoint = particleInfo[info.journey.currentIndex].target;
+                    const endPoint = particleInfo[info.journey.nextIndex].target;
+                    const journeyPos = new THREE.Vector3().lerpVectors(startPoint, endPoint, info.journey.progress);
+                    const formingPos = new THREE.Vector3().lerpVectors(info.initial, journeyPos, formationAlpha);
+                    
+                    const p = info.target;
+
+                    const maskValue = noise.noise(p.x * maskNoiseScale, p.y * maskNoiseScale, elapsedTime * maskNoiseSpeed);
+                    const localDistortionStrength = Math.max(0, maskValue);
+
+                    const distortionVec = new THREE.Vector3(
+                        noise.noise(p.x * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.y * distortionNoiseScale, elapsedTime * distortionNoiseSpeed),
+                        noise.noise(p.y * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.z * distortionNoiseScale, elapsedTime * distortionNoiseSpeed),
+                        noise.noise(p.z * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.x * distortionNoiseScale, elapsedTime * distortionNoiseSpeed)
+                    );
+                    distortionVec.multiplyScalar(distortionNoiseStrength * localDistortionStrength * formationAlpha);
+                    
+                    const energyVec = new THREE.Vector3(
+                        noise.noise(p.x * energyNoiseScale, p.y * energyNoiseScale, elapsedTime * energyNoiseSpeed),
+                        noise.noise(p.y * energyNoiseScale, p.z * energyNoiseScale, elapsedTime * energyNoiseSpeed),
+                        noise.noise(p.z * energyNoiseScale, p.x * energyNoiseScale, elapsedTime * energyNoiseSpeed)
+                    );
+                    energyVec.multiplyScalar(energyNoiseStrength * formationAlpha);
+
+                    dummy.position.copy(formingPos).add(energyVec).add(distortionVec);
+                    dummy.updateMatrix();
+                    particles.setMatrixAt(i, dummy.matrix);
+                }
+                particles.instanceMatrix.needsUpdate = true;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
+

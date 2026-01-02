@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Internal Kaleidoscope</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: sans-serif;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <h3>Internal Kaleidoscope</h3>
+        <p>Mouse move: Change Rotation Speed</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+        // 1. SCENE SETUP
+        const scene = new THREE.Scene();
+        // Add a slight fog to give depth to the tunnel
+        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. CREATE THE OBJECTS (The "Gems" inside)
+        // We create a tunnel of random geometries to act as the source material
+        const geometryGroup = new THREE.Group();
+        const geometries = [
+            new THREE.IcosahedronGeometry(0.5, 0),
+            new THREE.OctahedronGeometry(0.5, 0),
+            new THREE.TetrahedronGeometry(0.5, 0),
+            new THREE.TorusGeometry(0.3, 0.1, 8, 20)
+        ];
+
+        const material = new THREE.MeshNormalMaterial({ 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        // Generate particles
+        for (let i = 0; i < 400; i++) {
+            const geom = geometries[Math.floor(Math.random() * geometries.length)];
+            const mesh = new THREE.Mesh(geom, material);
+            
+            // Random positions in a long tunnel
+            mesh.position.x = (Math.random() - 0.5) * 10;
+            mesh.position.y = (Math.random() - 0.5) * 10;
+            mesh.position.z = (Math.random() - 0.5) * 50;
+            
+            // Random rotation
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+            
+            // Store random rotation speed in userData
+            mesh.userData.rotSpeed = {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02
+            };
+
+            geometryGroup.add(mesh);
+        }
+        scene.add(geometryGroup);
+
+        // 3. THE KALEIDOSCOPE SHADER
+        const KaleidoscopeShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'sides': { value: 6.0 },     // Number of reflections
+                'angle': { value: 0.0 }      // Rotation angle
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float sides;
+                uniform float angle;
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 p = vUv - 0.5;
+                    float r = length(p);
+                    float a = atan(p.y, p.x) + angle;
+                    float tau = 2.0 * 3.14159;
+                    
+                    // The magic folding logic
+                    a = mod(a, tau/sides);
+                    a = abs(a - tau/sides/2.0);
+                    
+                    p = r * vec2(cos(a), sin(a));
+                    
+                    // Sample the texture from the center outwards
+                    vec4 color = texture2D(tDiffuse, p + 0.5);
+                    gl_FragColor = color;
+                }
+            `
+        };
+
+        // 4. POST-PROCESSING PIPELINE
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const kaleidoPass = new ShaderPass(KaleidoscopeShader);
+        composer.addPass(kaleidoPass);
+
+        // 5. INTERACTION
+        let mouseX = 0;
+        let mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        // 6. ANIMATION LOOP
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Rotate the kaleidoscope angle continuously + mouse influence
+            kaleidoPass.uniforms['angle'].value += 0.005 + mouseX;
+
+            // Move the camera through the tunnel
+            camera.position.z -= 0.05;
+            camera.rotation.z += 0.002;
+
+            // Reset camera to loop the tunnel infinitely
+            if (camera.position.z < -20) {
+                camera.position.z = 5;
+            }
+
+            // Animate individual particles
+            geometryGroup.children.forEach(mesh => {
+                mesh.rotation.x += mesh.userData.rotSpeed.x;
+                mesh.rotation.y += mesh.userData.rotSpeed.y;
+            });
+
+            // Use composer.render() instead of renderer.render()
+            composer.render();
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

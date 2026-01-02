@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Letter 'A'</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #1a1a1a; /* Darker background for particle visibility */
+            color: #f0f0f0;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 400px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Generating 80,000 particles... This may take a moment.</div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
+        import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
+
+        // --- Basic Setup ---
+        let scene, camera, renderer, controls, clock;
+        let particles;
+        let noise;
+        const particleCount = 80000; // Increased particle count for density
+        const particleInfo = [];
+
+        // --- REMOVED: State Management for Distortion ---
+        // let distortionState = 'IDLE'; 
+        // ... (all related variables removed)
+
+        // --- Main Functions ---
+        init();
+        // We now need to pass the clock to animate to get delta time for smooth animation
+        function animateWrapper() {
+            animate(clock);
+        }
+        // Small change here to call the wrapper
+        // animate(); // old call
+        
+        // We will call animate in the font loader callback once particles are ready
+        
+        // Function to initialize the scene, camera, and renderer
+        function init() {
+            clock = new THREE.Clock();
+            scene = new THREE.Scene();
+            noise = new ImprovedNoise();
+            
+            // --- Camera and Renderer ---
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 12;
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // --- Load Font and Create Particle Targets ---
+            const fontLoader = new FontLoader();
+            // Using a serif font available in Three.js examples as a stand-in for Times New Roman
+            fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/fonts/gentilis_bold.typeface.json', function (font) {
+                
+                // 1. Create the Text Geometry for the letter 'A'
+                const textGeometry = new TextGeometry('A', {
+                    font: font,
+                    size: 8,
+                    height: 2, // This gives the letter depth
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 0.3,
+                    bevelSize: 0.1,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                });
+                
+                // Center the geometry so it rotates around its middle
+                textGeometry.center();
+
+                // 2. Create a temporary mesh to sample points from
+                const tempMesh = new THREE.Mesh(textGeometry);
+
+                // --- EFFICIENT VOLUME FILLING LOGIC ---
+                // Use MeshSurfaceSampler for efficient point generation
+                const sampler = new MeshSurfaceSampler(tempMesh);
+                sampler.build();
+
+                // 3. Create the InstancedMesh for particles
+                const particleGeometry = new THREE.SphereGeometry(0.025, 4, 4); // Smaller particles
+                const particleMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xC0C0C0,
+                    roughness: 0.6,
+                    metalness: 0.2
+                });
+                particles = new THREE.InstancedMesh(particleGeometry, particleMaterial, particleCount);
+
+                // 4. Generate points efficiently using surface sampling + volume expansion
+                const targetPosition = new THREE.Vector3();
+                const normal = new THREE.Vector3();
+                
+                // First, sample points on the surface
+                const surfacePoints = [];
+                const surfaceNormals = [];
+                for (let i = 0; i < Math.min(particleCount / 4, 10000); i++) {
+                    sampler.sample(targetPosition, normal);
+                    surfacePoints.push(targetPosition.clone());
+                    surfaceNormals.push(normal.clone());
+                }
+
+                // Then create volume points by expanding inward from surface
+                const batchSize = 1000; // Process particles in batches to prevent UI blocking
+                let currentBatch = 0;
+                
+                function processBatch() {
+                    const startIndex = currentBatch * batchSize;
+                    const endIndex = Math.min(startIndex + batchSize, particleCount);
+                    
+                    for (let i = startIndex; i < endIndex; i++) {
+                        let targetPos;
+                        if (i < surfacePoints.length) {
+                            // Use surface point directly
+                            targetPos = surfacePoints[i];
+                        } else {
+                            // Create volume point by moving surface point inward
+                            const surfaceIndex = Math.floor(Math.random() * surfacePoints.length);
+                            const surfacePoint = surfacePoints[surfaceIndex];
+                            const surfaceNormal = surfaceNormals[surfaceIndex];
+                            const inwardDistance = Math.random() * 0.8; // Adjust this to control volume depth
+                            
+                            targetPos = new THREE.Vector3()
+                                .copy(surfacePoint)
+                                .addScaledVector(surfaceNormal, -inwardDistance);
+                        }
+
+                        particleInfo.push({
+                            target: targetPos,
+                            journey: {
+                               currentIndex: i,
+                               nextIndex: Math.floor(Math.random() * particleCount),
+                               progress: 0.0,
+                               speed: 0.05 + Math.random() * 0.05
+                            },
+                            initial: new THREE.Vector3(
+                                (Math.random() - 0.5) * 30,
+                                (Math.random() - 0.5) * 30,
+                                (Math.random() - 0.5) * 30
+                            )
+                        });
+                    }
+                    
+                    // Update progress
+                    const progress = Math.round((endIndex / particleCount) * 100);
+                    document.getElementById('info').textContent = `Generating particles... ${progress}%`;
+                    
+                    currentBatch++;
+                    
+                    if (endIndex < particleCount) {
+                        // Continue with next batch
+                        setTimeout(processBatch, 10); // Small delay to keep UI responsive
+                    } else {
+                        // All particles generated
+                        document.getElementById('info').textContent = "Particles forming the letter 'A'. Drag to rotate.";
+                        scene.add(particles);
+                        animate(); // Start animation after particles are ready
+                    }
+                }
+                
+                processBatch(); // Start processing batches 
+            });
+
+            // --- Controls ---
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // --- Event Listeners ---
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        // --- REMOVED: triggerNewDistortion function ---
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // --- Optimized Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            const deltaTime = clock.getDelta();
+
+            // Check if particles have been initialized (font has loaded)
+            if (particles) {
+                const dummy = new THREE.Object3D();
+                const formationAlpha = Math.min(elapsedTime / 5.0, 1.0);
+
+                // --- Optimized Parameters ---
+                const distortionNoiseSpeed = 0.8;
+                const distortionNoiseScale = 0.5; 
+                const distortionNoiseStrength = 0.8; 
+                const maskNoiseSpeed = 0.2;
+                const maskNoiseScale = 0.2;
+                const energyNoiseSpeed = 3.0;
+                const energyNoiseScale = 2.5; 
+                const energyNoiseStrength = 0.15;
+
+                // Process particles in smaller batches per frame to maintain 60fps
+                const particlesPerFrame = Math.max(100, Math.floor(particleCount / 60)); // Process 1/60th of particles per frame
+                const startIndex = (Math.floor(elapsedTime * 60) % 60) * particlesPerFrame;
+                const endIndex = Math.min(startIndex + particlesPerFrame, particleCount);
+
+                for (let i = startIndex; i < endIndex; i++) {
+                    const info = particleInfo[i];
+                    
+                    // --- Journey Logic ---
+                    info.journey.progress += info.journey.speed * deltaTime;
+
+                    if (info.journey.progress >= 1.0) {
+                        info.journey.progress = 0.0;
+                        info.journey.currentIndex = info.journey.nextIndex;
+                        info.journey.nextIndex = Math.floor(Math.random() * particleCount);
+                    }
+                    
+                    const startPoint = particleInfo[info.journey.currentIndex].target;
+                    const endPoint = particleInfo[info.journey.nextIndex].target;
+                    const journeyPos = new THREE.Vector3().lerpVectors(startPoint, endPoint, info.journey.progress);
+                    const formingPos = new THREE.Vector3().lerpVectors(info.initial, journeyPos, formationAlpha);
+                    
+                    const p = info.target;
+
+                    // --- Optimized Noise Calculations ---
+                    const maskValue = noise.noise(p.x * maskNoiseScale, p.y * maskNoiseScale, elapsedTime * maskNoiseSpeed);
+                    const localDistortionStrength = Math.max(0, maskValue);
+
+                    const distortionVec = new THREE.Vector3(
+                        noise.noise(p.x * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.y * distortionNoiseScale, elapsedTime * distortionNoiseSpeed),
+                        noise.noise(p.y * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.z * distortionNoiseScale, elapsedTime * distortionNoiseSpeed),
+                        noise.noise(p.z * distortionNoiseScale + elapsedTime * distortionNoiseSpeed, p.x * distortionNoiseScale, elapsedTime * distortionNoiseSpeed)
+                    );
+                    distortionVec.multiplyScalar(distortionNoiseStrength * localDistortionStrength * formationAlpha);
+                    
+                    const energyVec = new THREE.Vector3(
+                        noise.noise(p.x * energyNoiseScale, p.y * energyNoiseScale, elapsedTime * energyNoiseSpeed),
+                        noise.noise(p.y * energyNoiseScale, p.z * energyNoiseScale, elapsedTime * energyNoiseSpeed),
+                        noise.noise(p.z * energyNoiseScale, p.x * energyNoiseScale, elapsedTime * energyNoiseSpeed)
+                    );
+                    energyVec.multiplyScalar(energyNoiseStrength * formationAlpha);
+
+                    dummy.position.copy(formingPos).add(energyVec).add(distortionVec);
+                    dummy.updateMatrix();
+                    particles.setMatrixAt(i, dummy.matrix);
+                }
+                particles.instanceMatrix.needsUpdate = true;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

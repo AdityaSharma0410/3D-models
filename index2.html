@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Phi AI Neural Network Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        #info h1 {
+            font-size: 1.8rem;
+            margin: 0;
+            font-weight: 500;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(0, 191, 255, 0.7);
+        }
+        #info p {
+            font-size: 0.9rem;
+            margin: 5px 0 0;
+            color: #b0b0c0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .label {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            border: 1px solid rgba(0, 191, 255, 0.5);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="info">
+        <h1>Conceptual Model of a Transformer Network</h1>
+        <p>A stylized 3D representation of data flow through a transformer-based neural network architecture like Microsoft's Phi series. This is for artistic and educational purposes, not a literal architectural diagram.</p>
+    </div>
+
+    <div id="labels-container"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls;
+        let dataParticles, modelGroup;
+        const labels = [];
+        const labelsContainer = document.getElementById('labels-container');
+
+        // --- Initialization ---
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0a0a1a, 0.008);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 20, 100);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 20;
+            controls.maxDistance = 300;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.2;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x00bfff, 2, 300);
+            pointLight.position.set(0, 50, 50);
+            scene.add(pointLight);
+
+            // --- Build the Model ---
+            modelGroup = new THREE.Group();
+            scene.add(modelGroup);
+
+            // Input/Embedding Layer
+            const embeddingLayer = createLayer(10000, 50, 0x00bfff, 'Input & Embedding');
+            embeddingLayer.position.z = -150;
+            modelGroup.add(embeddingLayer);
+            addLabel(embeddingLayer, 'Input & Embedding');
+
+            // Transformer Blocks
+            const numBlocks = 8;
+            for (let i = 0; i < numBlocks; i++) {
+                const zPos = -120 + i * 30;
+                const block = createTransformerBlock(zPos, `Transformer Block ${i + 1}`);
+                modelGroup.add(block);
+            }
+            
+            // Output/Prediction Layer
+            const outputLayer = createLayer(500, 10, 0xff4500, 'Output Logits');
+            outputLayer.position.z = -120 + numBlocks * 30;
+            modelGroup.add(outputLayer);
+            addLabel(outputLayer, 'Final Prediction');
+
+            // Data Flow Particles
+            createDataFlow();
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        // --- Helper Functions ---
+        function createLayer(numPoints, size, color, name) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(numPoints * 3);
+            const radius = size / 2;
+
+            for (let i = 0; i < numPoints; i++) {
+                const x = (Math.random() - 0.5) * size;
+                const y = (Math.random() - 0.5) * size;
+                const z = 0;
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                positions[i * 3 + 2] = z;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: color,
+                size: 0.3,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true
+            });
+
+            const points = new THREE.Points(geometry, material);
+            points.name = name;
+            return points;
+        }
+
+        function createTransformerBlock(z, name) {
+            const blockGroup = new THREE.Group();
+
+            // Multi-Head Attention
+            const attentionGroup = new THREE.Group();
+            const numHeads = 8;
+            for (let i = 0; i < numHeads; i++) {
+                const angle = (i / numHeads) * Math.PI * 2;
+                const x = Math.cos(angle) * 15;
+                const y = Math.sin(angle) * 15;
+                const head = createLayer(1000, 10, 0x9f78ff, `Attention Head ${i}`);
+                head.position.set(x, y, 0);
+                attentionGroup.add(head);
+            }
+            attentionGroup.position.z = z - 5;
+            blockGroup.add(attentionGroup);
+            addLabel(attentionGroup, 'Multi-Head Attention');
+
+
+            // Feed-Forward Network
+            const ffnLayer = createLayer(12000, 55, 0x4169e1, 'Feed-Forward Network');
+            ffnLayer.position.z = z + 5;
+            blockGroup.add(ffnLayer);
+            addLabel(ffnLayer, 'Feed-Forward Network');
+
+            return blockGroup;
+        }
+        
+        function createDataFlow() {
+            const particleCount = 2000;
+            const particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 2] = -150 + Math.random() * 300;
+
+                velocities[i * 3] = 0;
+                velocities[i * 3 + 1] = 0;
+                velocities[i * 3 + 2] = 0.5 + Math.random() * 0.5;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending
+            });
+
+            dataParticles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(dataParticles);
+        }
+
+        function addLabel(object, text) {
+            const div = document.createElement('div');
+            div.className = 'label';
+            div.textContent = text;
+            labelsContainer.appendChild(div);
+            labels.push({ div, object });
+        }
+        
+        function updateLabels() {
+            for (const label of labels) {
+                // Only show labels for certain objects when zoomed in enough
+                if (label.object.name.includes("Feed-Forward") || label.object.name.includes("Multi-Head")) {
+                     const distance = camera.position.distanceTo(label.object.getWorldPosition(new THREE.Vector3()));
+                     if (distance > 150) {
+                         label.div.style.display = 'none';
+                         continue;
+                     }
+                }
+                
+                const vector = new THREE.Vector3();
+                label.object.updateWorldMatrix(true, false);
+                vector.setFromMatrixPosition(label.object.matrixWorld);
+                vector.project(camera);
+
+                const x = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+                const y = (vector.y * -0.5 + 0.5) * renderer.domElement.clientHeight;
+
+                // Hide labels that are behind the camera
+                if (vector.z > 1) {
+                    label.div.style.display = 'none';
+                } else {
+                    label.div.style.display = 'block';
+                    label.div.style.left = `${x}px`;
+                    label.div.style.top = `${y}px`;
+                }
+            }
+        }
+
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            controls.update();
+            
+            // Animate data particles
+            if (dataParticles) {
+                const positions = dataParticles.geometry.attributes.position.array;
+                const velocities = dataParticles.geometry.attributes.velocity.array;
+                const zEnd = 150;
+                const zStart = -150;
+
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 2] += velocities[i + 2];
+                    if (positions[i + 2] > zEnd) {
+                        positions[i] = (Math.random() - 0.5) * 50;
+                        positions[i + 1] = (Math.random() - 0.5) * 50;
+                        positions[i + 2] = zStart;
+                    }
+                }
+                dataParticles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Animate groups for a "live" feel
+            modelGroup.rotation.y += 0.0002;
+            
+            updateLabels();
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Start ---
+        init();
+        animate();
+    </script>
+</body>
+</html>

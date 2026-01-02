@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-5 Neural Network Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0a0a1a;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background-color: #00d9ff;
+            border: none;
+            color: #0a0a1a;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #ffffff;
+            transform: translateY(-2px);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="controls">
+        <button id="start-btn">Start Firing</button>
+        <button id="stop-btn">Stop Firing</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Basic Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera.position.z = 60;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // Neural Network Parameters
+        const config = {
+            layers: [
+                { name: 'Input/Embedding', count: 120, radius: 15, color: 0x00d9ff },
+                { name: 'Transformer Block 1', count: 100, radius: 18, color: 0xffae00 },
+                { name: 'Transformer Block 2', count: 100, radius: 21, color: 0xffae00 },
+                { name: 'Transformer Block 3', count: 100, radius: 24, color: 0xffae00 },
+                { name: 'Output/Logits', count: 80, radius: 27, color: 0x00ff88 }
+            ],
+            layerSpacing: 15,
+            neuronSize: 0.2
+        };
+
+        const networkGroup = new THREE.Group();
+        const neuronGroups = [];
+        const connectionsGroup = new THREE.Group();
+        const firingPulses = [];
+
+        const NEURON_NORMAL_MATERIAL = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+        const NEURON_FIRING_MATERIAL = new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff, emissiveIntensity: 2, roughness: 0.2 });
+
+        // Create Layers
+        let currentZ = 0;
+        config.layers.forEach((layerConfig, layerIndex) => {
+            const layerGroup = new THREE.Group();
+            layerGroup.name = layerConfig.name;
+            const neurons = [];
+            for (let i = 0; i < layerConfig.count; i++) {
+                const angle = (i / layerConfig.count) * Math.PI * 2;
+                const x = layerConfig.radius * Math.cos(angle);
+                const y = layerConfig.radius * Math.sin(angle);
+
+                const neuronGeometry = new THREE.SphereGeometry(config.neuronSize, 16, 16);
+                const neuron = new THREE.Mesh(neuronGeometry, NEURON_NORMAL_MATERIAL.clone());
+                neuron.position.set(x, y, 0);
+                layerGroup.add(neuron);
+                neurons.push(neuron);
+            }
+            layerGroup.position.z = currentZ;
+            currentZ -= config.layerSpacing;
+            networkGroup.add(layerGroup);
+            neuronGroups.push({ group: layerGroup, neurons: neurons, config: layerConfig });
+        });
+
+        // Create Connections
+        const connectionMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.08
+        });
+        
+        for (let i = 0; i < neuronGroups.length - 1; i++) {
+            const currentLayerNeurons = neuronGroups[i].neurons;
+            const nextLayerNeurons = neuronGroups[i + 1].neurons;
+
+            // Connect a subset for performance and visual clarity
+            for (let j = 0; j < currentLayerNeurons.length; j += 4) {
+                 for (let k = 0; k < nextLayerNeurons.length; k += 4) {
+                    const points = [];
+                    const startPos = new THREE.Vector3();
+                    currentLayerNeurons[j].getWorldPosition(startPos);
+                    
+                    const endPos = new THREE.Vector3();
+                    nextLayerNeurons[k].getWorldPosition(endPos);
+
+                    points.push(startPos, endPos);
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, connectionMaterial);
+                    connectionsGroup.add(line);
+                }
+            }
+        }
+        
+        networkGroup.add(connectionsGroup);
+        scene.add(networkGroup);
+
+        // Center the network
+        const box = new THREE.Box3().setFromObject(networkGroup);
+        const center = box.getCenter(new THREE.Vector3());
+        networkGroup.position.sub(center);
+
+        // Firing Animation Logic
+        let firingInterval;
+        let isFiring = false;
+        let currentFiringLayer = 0;
+        let firingNeuronIndex = 0;
+        
+        function startFiring() {
+            if (isFiring) return;
+            isFiring = true;
+
+            firingInterval = setInterval(() => {
+                const layer = neuronGroups[currentFiringLayer];
+                const neuron = layer.neurons[firingNeuronIndex];
+                
+                // Fire current neuron
+                fireNeuron(neuron, layer.config.color);
+
+                // Start pulse to next layer
+                if (currentFiringLayer < neuronGroups.length - 1) {
+                    const nextLayer = neuronGroups[currentFiringLayer + 1];
+                    const targetNeuron = nextLayer.neurons[Math.floor(Math.random() * nextLayer.neurons.length)];
+                    createPulse(neuron, targetNeuron);
+                }
+
+                firingNeuronIndex = (firingNeuronIndex + 1) % layer.neurons.length;
+
+                // Move to next layer
+                if (firingNeuronIndex === 0) {
+                    currentFiringLayer = (currentFiringLayer + 1) % neuronGroups.length;
+                }
+
+            }, 50);
+        }
+
+        function stopFiring() {
+            clearInterval(firingInterval);
+            isFiring = false;
+        }
+        
+        document.getElementById('start-btn').addEventListener('click', startFiring);
+        document.getElementById('stop-btn').addEventListener('click', stopFiring);
+
+        function fireNeuron(neuron, fireColor) {
+             const originalMaterial = neuron.material;
+             neuron.material = new THREE.MeshStandardMaterial({ color: fireColor, emissive: fireColor, emissiveIntensity: 2 });
+             setTimeout(() => {
+                neuron.material = originalMaterial;
+             }, 500);
+        }
+
+        // Pulse Animation Logic
+        function createPulse(startNeuron, endNeuron) {
+            const pulseGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+            const pulseMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+            const pulse = new THREE.Mesh(pulseGeometry, pulseMaterial);
+
+            const startPos = new THREE.Vector3();
+            startNeuron.getWorldPosition(startPos);
+            const endPos = new THREE.Vector3();
+            endNeuron.getWorldPosition(endPos);
+            
+            pulse.position.copy(startPos);
+            
+            firingPulses.push({
+                mesh: pulse,
+                start: startPos,
+                end: endPos,
+                progress: 0
+            });
+            scene.add(pulse);
+        }
+
+        function updatePulses() {
+            for (let i = firingPulses.length - 1; i >= 0; i--) {
+                const pulse = firingPulses[i];
+                pulse.progress += 0.02; // speed
+                
+                pulse.mesh.position.lerpVectors(pulse.start, pulse.end, pulse.progress);
+
+                if (pulse.progress >= 1) {
+                    scene.remove(pulse.mesh);
+                    firingPulses.splice(i, 1);
+                }
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Rotate the whole network for a dynamic feel
+            if (!isFiring) {
+                 networkGroup.rotation.y += 0.0005;
+                 networkGroup.rotation.x += 0.0003;
+            }
+            
+            if(isFiring){
+                 updatePulses();
+            }
+
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

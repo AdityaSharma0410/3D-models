@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User DTO Pattern Flowchart</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        
+        .layer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .controller-layer { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        .service-layer { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .mapper-layer { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .repository-layer { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        
+        .component {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 10px;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .component h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .dto {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .entity {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .method {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        .arrow {
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .arrow::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 20px solid #2c3e50;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 2px;
+            background: #2c3e50;
+            right: 20px;
+        }
+        
+        .data-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #007bff;
+        }
+        
+        .operation {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .operation h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            background: #007bff;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 12px;
+        }
+        
+        .code-snippet {
+            background: #2c3e50;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            margin: 5px 0;
+            overflow-x: auto;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🔄 User DTO Pattern Data Flow</h1>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color dto"></div>
+                <span>DTO Objects</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color entity"></div>
+                <span>Entity Objects</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);"></div>
+                <span>Controller Layer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);"></div>
+                <span>Service Layer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);"></div>
+                <span>Mapper Layer</span>
+            </div>
+        </div>
+
+        <!-- CREATE USER OPERATION -->
+        <div class="operation">
+            <h3>🚀 CREATE USER OPERATION</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>HTTP Request arrives with JSON</strong>
+                    <div class="code-snippet">POST /api/users
+Content-Type: application/json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "avatar": "avatar-url"
+}</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component dto">
+                    <h4>UserCreateRequestDTO</h4>
+                    <div style="font-size: 11px;">
+                        email: "user@example.com"<br>
+                        password: "password123"<br>
+                        firstName: "John"<br>
+                        lastName: "Doe"<br>
+                        avatar: "avatar-url"
+                    </div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>Controller</h4>
+                    <div class="method">@PostMapping<br>createUser()</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Controller calls UserMapper.toEntity()</strong>
+                    <div class="code-snippet">User user = UserMapper.toEntity(request);</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component dto">
+                    <h4>UserCreateRequestDTO</h4>
+                    <div style="font-size: 11px;">All user input fields</div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>UserMapper</h4>
+                    <div class="method">toEntity()</div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component entity">
+                    <h4>User Entity</h4>
+                    <div style="font-size: 11px;">
+                        id: null (auto-generated)<br>
+                        email: "user@example.com"<br>
+                        password: "password123"<br>
+                        firstName: "John"<br>
+                        lastName: "Doe"<br>
+                        role: "user" (default)<br>
+                        avatar: "avatar-url"<br>
+                        cart: null
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Controller passes Entity to Service</strong>
+                    <div class="code-snippet">User savedUser = userService.createUser(user);</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div>
+                    <strong>Service validates and saves to Database</strong>
+                    <div class="code-snippet">return userRepository.save(user);  // Returns User with generated ID</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">5</div>
+                <div>
+                    <strong>Controller converts saved Entity to Response DTO</strong>
+                    <div class="code-snippet">return ResponseEntity.ok(UserMapper.toDTO(savedUser));</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component entity">
+                    <h4>Saved User Entity</h4>
+                    <div style="font-size: 11px;">
+                        id: 123 (generated)<br>
+                        email: "user@example.com"<br>
+                        password: "hashedPassword"<br>
+                        firstName: "John"<br>
+                        lastName: "Doe"<br>
+                        role: "user"<br>
+                        avatar: "avatar-url"
+                    </div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>UserMapper</h4>
+                    <div class="method">toDTO()</div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component dto">
+                    <h4>UserResponseDTO</h4>
+                    <div style="font-size: 11px;">
+                        id: 123<br>
+                        email: "user@example.com"<br>
+                        firstName: "John"<br>
+                        lastName: "Doe"<br>
+                        role: "user"<br>
+                        avatar: "avatar-url"<br>
+                        <em>(No password!)</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UPDATE USER OPERATION -->
+        <div class="operation">
+            <h3>✏️ UPDATE USER OPERATION</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>HTTP Request with Update Data</strong>
+                    <div class="code-snippet">PUT /api/users/123
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "avatar": "new-avatar-url"
+}</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component dto">
+                    <h4>UserUpdateRequestDTO</h4>
+                    <div style="font-size: 11px;">
+                        firstName: "Jane"<br>
+                        lastName: "Smith"<br>
+                        password: null<br>
+                        avatar: "new-avatar-url"
+                    </div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>Controller</h4>
+                    <div class="method">@PutMapping<br>updateUser()</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Service fetches existing User from Database</strong>
+                    <div class="code-snippet">Optional&lt;User&gt; existingUser = userRepository.findById(id);</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>UserMapper.updateEntity() selectively updates fields</strong>
+                    <div class="code-snippet">UserMapper.updateEntity(user, request);
+// Only updates non-null fields from DTO</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component entity">
+                    <h4>Existing User Entity</h4>
+                    <div style="font-size: 11px;">
+                        id: 123<br>
+                        email: "user@example.com"<br>
+                        firstName: "John" → "Jane"<br>
+                        lastName: "Doe" → "Smith"<br>
+                        avatar: "old-url" → "new-avatar-url"<br>
+                        password: unchanged<br>
+                        role: unchanged
+                    </div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>UserMapper</h4>
+                    <div class="method">updateEntity()</div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component entity">
+                    <h4>Updated User Entity</h4>
+                    <div style="font-size: 11px;">
+                        Only modified fields<br>
+                        are updated
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GET USER OPERATION -->
+        <div class="operation">
+            <h3>📖 GET USER OPERATION</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>HTTP GET Request</strong>
+                    <div class="code-snippet">GET /api/users/123</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Service retrieves User Entity from Database</strong>
+                    <div class="code-snippet">Optional&lt;User&gt; user = userRepository.findById(id);</div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Controller maps Entity to Response DTO</strong>
+                    <div class="code-snippet">.map(user -> ResponseEntity.ok(UserMapper.toDTO(user)))</div>
+                </div>
+            </div>
+
+            <div class="data-flow">
+                <div class="component entity">
+                    <h4>User Entity (from DB)</h4>
+                    <div style="font-size: 11px;">
+                        Contains ALL fields<br>
+                        including sensitive data<br>
+                        like password hash
+                    </div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component">
+                    <h4>UserMapper</h4>
+                    <div class="method">toDTO()</div>
+                </div>
+                <div style="font-size: 24px;">→</div>
+                <div class="component dto">
+                    <h4>UserResponseDTO</h4>
+                    <div style="font-size: 11px;">
+                        Filters out sensitive data<br>
+                        Only public-safe fields<br>
+                        Perfect for API response
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KEY BENEFITS -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <h3 style="text-align: center; margin-bottom: 20px;">🎯 Key Benefits of DTO Pattern</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <strong>🛡️ Security</strong><br>
+                    Sensitive fields like passwords are never exposed in responses
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <strong>🔧 Flexibility</strong><br>
+                    Different DTOs for different operations (Create vs Update vs Response)
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <strong>📝 Validation</strong><br>
+                    Each DTO can have specific validation rules for its use case
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <strong>🎯 Clean API</strong><br>
+                    API contracts are clear and purpose-specific
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

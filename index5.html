@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technology Stack</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Hide scrollbars to keep SVG lines positioned correctly */
+        }
+        /* Custom styles for logo images to handle dark/light backgrounds */
+        .logo-img {
+            object-fit: contain;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+        .logo-img.invert-on-dark {
+            filter: invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+        .logo-img.bg-white-circle {
+            background-color: white;
+            border-radius: 50%;
+            padding: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 sm:p-8">
+
+    <!-- SVG container for connector lines -->
+    <svg id="connector-lines" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"></svg>
+
+    <!-- Main flowchart layout -->
+    <div id="flowchart" class="relative z-10 flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-16 opacity-0 transition-opacity duration-1000">
+
+        <!-- Level 0: Main Box -->
+        <div id="tech-stack" class="flex-shrink-0 text-center text-lg font-bold bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-lg rounded-xl px-6 py-4 mt-0 lg:mt-32">
+            TECH. STACK
+        </div>
+
+        <!-- Categories and Technologies -->
+        <div class="flex flex-col items-start gap-6">
+
+            <!-- Category 1 -->
+            <div class="flow-group flex flex-row items-start gap-4">
+                <div id="cat-lang" class="flow-box category-box w-48 text-center flex-shrink-0 bg-gray-700 shadow-md rounded-lg px-4 py-2 text-sm font-semibold">
+                    LANGUAGES &<br>CORE FRAMEWORKS
+                </div>
+                <div class="flex flex-col items-start gap-2">
+                    <div id="tech-python" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://s3.dualstack.us-east-2.amazonaws.com/pythondotorg-assets/media/community/logos/python-logo-only.png" alt="Python" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">Python</span>
+                    </div>
+                    <div id="tech-fastapi" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" alt="FastAPI" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">FastAPI</span>
+                    </div>
+                    <div id="tech-js" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png" alt="JavaScript" class="h-5 w-5 logo-img bg-black">
+                        <span class="text-xs font-medium">JavaScript</span>
+                    </div>
+                    <div id="tech-react" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" alt="React" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">React</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 2 -->
+            <div class="flow-group flex flex-row items-start gap-4">
+                <div id="cat-network" class="flow-box category-box w-48 text-center flex-shrink-0 bg-gray-700 shadow-md rounded-lg px-4 py-2 text-sm font-semibold">
+                    BACKEND: NETWORK<br>& ANALYSIS
+                </div>
+                <div class="flex flex-col items-start gap-2">
+                    <div id="tech-scapy" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <!-- SCAPY LOGO: Replaced <img> with inline SVG for reliability -->
+                        <svg class="h-5 w-5 logo-img text-white" fill="currentColor" viewBox="0 0 249.3 59.5" xmlns="http://www.w3.org/2000/svg"><path d="M38.4 20.3c0-8-5.1-12.2-13.2-12.2H0v43.2h10.9V36.9h11.9c3.1 0 7.2 1.2 7.2 5.5 0 2.8-2.1 4.6-5.1 4.6H10.9v10.8h14.4c8.1 0 13.1-4.2 13.1-12.2V20.3zm-14.3-1.8c2.9 0 4.1 1.2 4.1 3.2 0 2.1-1.2 3.2-4.1 3.2H10.9V18.5h13.2zM80.1 57.8v-29c0-8.9-5.2-12.9-14.5-12.9-9.2 0-14.4 4-14.4 12.9v29H40.3V16.3h10.2v4.8c2.6-3.8 6.8-5.3 11.1-5.3 9.4 0 18.5 5.5 18.5 17.1v24.9H80.1zM132 57.8V8.7h-11V57.8h11zm-4-32.2c0-2.4-1.9-4.3-4.3-4.3s-4.3 1.9-4.3 4.3 1.9 4.3 4.3 4.3 4.3-1.9 4.3-4.3zM167.3 16.3h10.9v41.5h-10.9V16.3zm-5.4-7.6h21.8v10.8h-21.8V8.7zM221.7 57.8 202.2 8.7h11.7l12.4 31.9 12.3-31.9h11.7l-19.5 49.1h-11.5z"></path></svg>
+                        <span class="text-xs font-medium">Scapy</span>
+                    </div>
+                    <div id="tech-river" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <svg class="h-5 w-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
+                        <span class="text-xs font-medium">River</span>
+                    </div>
+                     <div id="tech-geoip" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://avatars.githubusercontent.com/u/3842637?s=280&v=4" alt="GeoIP2" class="h-5 w-5 logo-img rounded-full">
+                        <span class="text-xs font-medium">GeoIP2</span>
+                    </div>
+                    <div id="tech-uvicorn" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <!-- UVICORN LOGO: Replaced <img> with inline SVG for reliability -->
+                        <svg class="h-5 w-5 logo-img" viewBox="0 0 258 253" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M128.8 3.5C57.8 3.5.8 60.5.8 131.5s57 128 128 128 128-57 128-128-57-128-128-128zm-22.3 211.5l-39-39 22.7-22.7 16.3 16.3 54-54 22.7 22.7-76.7 76.7z" fill="#069488"></path><path d="M106.6 215L67.5 176l22.7-22.7 16.3 16.3 54-54L183.2 138l-76.6 77z" fill="url(#paint0_linear)"></path><defs><linearGradient id="paint0_linear" x1="162.2" y1="117.8" x2="86.8" y2="193.2" gradientUnits="userSpaceOnUse"><stop stop-color="#27b9a5"></stop><stop offset="1" stop-color="#069488"></stop></linearGradient></defs></svg>
+                        <span class="text-xs font-medium">Uvicorn</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 3 -->
+            <div class="flow-group flex flex-row items-start gap-4">
+                <div id="cat-security" class="flow-box category-box w-48 text-center flex-shrink-0 bg-gray-700 shadow-md rounded-lg px-4 py-2 text-sm font-semibold">
+                    BACKEND: SECURITY<br>& AUTHENTICATION
+                </div>
+                <div class="flex flex-col items-start gap-2">
+                    <div id="tech-crypto" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <svg class="h-5 w-5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+                        <span class="text-xs font-medium">Cryptography</span>
+                    </div>
+                    <div id="tech-passlib" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" /></svg>
+                        <span class="text-xs font-medium">Passlib</span>
+                    </div>
+                    <div id="tech-jose" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                         <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286Z" /></svg>
+                        <span class="text-xs font-medium">Python-JOSE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 4 -->
+            <div class="flow-group flex flex-row items-start gap-4">
+                <div id="cat-db" class="flow-box category-box w-48 text-center flex-shrink-0 bg-gray-700 shadow-md rounded-lg px-4 py-2 text-sm font-semibold">
+                    BACKEND: DATABASE<br>& CACHING
+                </div>
+                <div class="flex flex-col items-start gap-2">
+                    <div id="tech-sqlmodel" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" /></svg>
+                        <span class="text-xs font-medium">SQLModel</span>
+                    </div>
+                    <div id="tech-sqlalchemy" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://www.sqlalchemy.org/img/sqla_logo.png" alt="SQLAlchemy" class="h-5 w-5 logo-img invert-on-dark">
+                        <span class="text-xs font-medium">SQLAlchemy</span>
+                    </div>
+                    <div id="tech-sqlite" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://cdn.simpleicons.org/sqlite/white" alt="SQLite" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">SQLite</span>
+                    </div>
+                    <div id="tech-redis" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://redis.io/wp-content/uploads/2024/04/Logotype.svg" alt="Redis" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">Redis</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 5 -->
+            <div class="flow-group flex flex-row items-start gap-4">
+                <div id="cat-frontend" class="flow-box category-box w-48 text-center flex-shrink-0 bg-gray-700 shadow-md rounded-lg px-4 py-2 text-sm font-semibold">
+                    FRONTEND: UI<br>& CONNECTIVITY
+                </div>
+                <div class="flex flex-col items-start gap-2">
+                    <div id="tech-axios" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://axios-http.com/assets/logo.svg" alt="Axios" class="h-5 w-5 logo-img invert-on-dark">
+                        <span class="text-xs font-medium">Axios</span>
+                    </div>
+                    <div id="tech-chartjs" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://www.chartjs.org/img/chartjs-logo.svg" alt="Chart.js" class="h-5 w-5 logo-img bg-white-circle">
+                        <span class="text-xs font-medium">Chart.js</span>
+                    </div>
+                    <div id="tech-tailwind" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Tailwind_CSS_Logo.svg" alt="Tailwind CSS" class="h-5 w-5 logo-img">
+                        <span class="text-xs font-medium">Tailwind CSS</span>
+                    </div>
+                    <div id="tech-framer" class="flow-box tech-box flex items-center gap-2 bg-gray-800 shadow-sm rounded-lg px-3 py-1 hover:bg-gray-700 transition-colors cursor-pointer">
+                        <img src="https://cdn.simpleicons.org/framer/black" alt="Framer Motion" class="h-5 w-5 logo-img invert-on-dark">
+                        <span class="text-xs font-medium">Framer Motion</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.getElementById('connector-lines');
+            const flowchart = document.getElementById('flowchart');
+
+            // Function to create a smooth, curved path between two points
+            function createPath(startEl, endEl, isTechLink) {
+                const startRect = startEl.getBoundingClientRect();
+                const endRect = endEl.getBoundingClientRect();
+                const svgRect = svg.getBoundingClientRect();
+
+                // Calculate connection points, adjusting for scroll position
+                const startX = startRect.right - svgRect.left;
+                const startY = startRect.top + startRect.height / 2 - svgRect.top;
+                const endX = endRect.left - svgRect.left;
+                const endY = endRect.top + endRect.height / 2 - svgRect.top;
+                
+                const controlPointX1 = startX + (endX - startX) * 0.5;
+                const controlPointY1 = startY;
+                const controlPointX2 = startX + (endX - startX) * 0.5;
+                const controlPointY2 = endY;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${startX} ${startY} C ${controlPointX1} ${controlPointY1}, ${controlPointX2} ${controlPointY2}, ${endX} ${endY}`);
+                path.setAttribute('stroke', 'rgba(107, 114, 128, 0.5)'); // gray-500 with opacity
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                
+                // Animate the path drawing
+                path.style.strokeDasharray = 1000;
+                path.style.strokeDashoffset = 1000;
+                path.style.animation = 'dash 2s ease-out forwards';
+
+                return path;
+            }
+
+            // Function to draw all lines
+            function drawLines() {
+                svg.innerHTML = ''; // Clear existing lines
+
+                const mainNode = document.getElementById('tech-stack');
+                const categoryBoxes = document.querySelectorAll('.category-box');
+                const techBoxes = document.querySelectorAll('.tech-box');
+
+                if (!mainNode) return;
+
+                // Create a style element for the animation
+                const style = document.createElement('style');
+                if (!document.head.querySelector('style#dash-animation')) {
+                    style.id = 'dash-animation';
+                    style.innerHTML = `@keyframes dash { to { stroke-dashoffset: 0; } }`;
+                    document.head.appendChild(style);
+                }
+
+                // Lines from Main Node to Categories
+                categoryBoxes.forEach(catBox => {
+                    const path = createPath(mainNode, catBox, false);
+                    path.style.animationDelay = '0.5s';
+                    svg.appendChild(path);
+                });
+
+                // Lines from Categories to Techs
+                document.querySelectorAll('.flow-group').forEach(group => {
+                    const catBox = group.querySelector('.category-box');
+                    const techBoxesInGroup = group.querySelectorAll('.tech-box');
+                    
+                    techBoxesInGroup.forEach(techBox => {
+                        const path = createPath(catBox, techBox, true);
+                        path.style.animationDelay = '1s';
+                        svg.appendChild(path);
+                    });
+                });
+            }
+
+            // Draw lines on load after a brief delay for layout to settle
+            setTimeout(() => {
+                flowchart.classList.remove('opacity-0');
+                drawLines();
+            }, 100);
+
+            // Redraw lines on window resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(drawLines, 200);
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
