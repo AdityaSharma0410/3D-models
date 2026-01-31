@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Gesture Sword</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #video-container { position: absolute; bottom: 10px; right: 10px; width: 200px; border: 2px solid white; z-index: 10; }
+        video { width: 100%; transform: scaleX(-1); } /* Mirror the video */
+    </style>
+</head>
+<body>
+
+    <div id="video-container">
+        <video id="input_video"></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        let sword;
+
+        // --- 1. THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5).優化;
+        scene.add(light, new THREE.AmbientLight(0x404040));
+
+        // Creating a Simple Sword (Handle + Blade)
+        const swordGroup = new THREE.Group();
+        
+        // Blade
+        const bladeGeo = new THREE.BoxGeometry(0.2, 4, 0.05);
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, metalness: 0.8, roughness: 0.2 });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        blade.position.y = 2; // Offset so the handle is the pivot point
+        swordGroup.add(blade);
+
+        // Handle
+        const handleGeo = new THREE.CylinderGeometry(0.1, 0.1, 1);
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0x4b2e2e });
+        const handle = new THREE.Mesh(handleGeo, handleMat);
+        handle.position.y = -0.5;
+        swordGroup.add(handle);
+
+        scene.add(swordGroup);
+        sword = swordGroup;
+        camera.position.z = 8;
+
+        // --- 2. MEDIAPIPE HAND TRACKING ---
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Landmark 0 is the wrist, 9 is the middle finger MCP (knuckle)
+                // We use these to track position and orientation
+                const wrist = landmarks[0];
+                const knuckle = landmarks[9];
+
+                // Convert MediaPipe coords (0 to 1) to Three.js coords (-X to +X)
+                const x = (wrist.x - 0.5) * -15; // Invert X for mirroring
+                const y = (wrist.y - 0.5) * -10;
+                const z = (wrist.z) * -10;
+
+                sword.position.set(x, y, 0);
+
+                // Simple Rotation: Point sword from wrist towards knuckle
+                const dx = knuckle.x - wrist.x;
+                const dy = knuckle.y - wrist.y;
+                const angle = Math.atan2(dy, dx) + Math.PI/2;
+                sword.rotation.z = -angle;
+            }
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onResults);
+
+        const cameraFeed = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        cameraFeed.start();
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
